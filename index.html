@@ -159,8 +159,6 @@
     .ad-sponsored-label { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
     .ad-content { font-size: 0.85rem; font-weight: 500; color: #f3f4f6; }
     .monetization-buttons { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
-    .btn-lead { background: #22c55e; color: white; border: none; padding: 0.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
-    .btn-lead:hover { background: #16a34a; }
     .btn-pdf { background: transparent; border: 1px solid #3b82f6; color: #60a5fa; padding: 0.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
     .btn-pdf:hover { background: rgba(59, 130, 246, 0.1); }
 
@@ -339,7 +337,6 @@
 
         const monetizationHtml = `
           <div class="monetization-buttons">
-            <button class="btn-lead" onclick="alert('Funcionalidad Pro: Redirigiendo a formulario de Lead para corretaje...')">📩 Contactar Asesor de Zona</button>
             <button class="btn-pdf" onclick="alert('Funcionalidad Pro: Procesando pago de $3 USD para descargar Certificado PDF...')">📄 Descargar Detalles ($3 USD)</button>
           </div>
         `;
