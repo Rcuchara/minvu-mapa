@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Minvu Explorer: Visualizador interactivo de Planes Reguladores y Zonificaciones de Chile. Revisa Zonas Industriales y usos de suelo." />
+  <meta name="keywords" content="MINVU, Chile, Plan Regulador, Zonificación, Uso de suelo, Zonas Industriales" />
+  <meta name="author" content="Claudio Vargas" />
+  <meta property="og:title" content="Minvu Explorer - Zonificación Industrial" />
+  <meta property="og:description" content="Analiza mapas de uso de suelo en tiempo real con datos de IDE MINVU." />
+  <meta property="og:type" content="website" />
+  <title>Minvu Explorer - Zonificación Industrial</title>
+  
+  <!-- CSS Fonts and Setup -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  
+  <!-- Custom Styles (Premium Glassmorphism Look) -->
+  <style>
+    :root {
+      --primary-bg: #111827;
+      --secondary-bg: rgba(31, 41, 55, 0.85);
+      --text-primary: #f3f4f6;
+      --text-secondary: #9ca3af;
+      --accent-color: #3b82f6;
+      --accent-hover: #2563eb;
+      --industrial-color: #ef4444;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      font-family: 'Inter', sans-serif;
+      color: var(--text-primary);
+      background-color: var(--primary-bg);
+    }
+
+    .app-container {
+      display: flex;
+      height: 100%;
+      width: 100%;
+      position: relative;
+    }
+
+    /* Sidebar Styling */
+    .sidebar {
+      width: 380px;
+      background: var(--secondary-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      z-index: 1000;
+      box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+    }
+
+    .sidebar-header {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      background: linear-gradient(to right, #60a5fa, #c084fc);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .sidebar-subtitle { font-size: 0.875rem; color: var(--text-secondary); }
+
+    .filter-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .filter-title { font-size: 1rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+
+    .filter-option {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      cursor: pointer;
+    }
+
+    .filter-option input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--industrial-color);
+      cursor: pointer;
+    }
+
+    .btn {
+      background: var(--accent-color);
+      color: white;
+      border: none;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      text-align: center;
+    }
+
+    .btn:hover { background: var(--accent-hover); }
+
+    /* Map Area */
+    .map-container {
+      flex-grow: 1;
+      height: 100%;
+      position: relative;
+    }
+    
+    #map {
+      width: 100%;
+      height: 100%;
+      background: #1e293b;
+    }
+
+    /* Popup Styling */
+    .leaflet-popup-content-wrapper {
+      background: rgba(31, 41, 55, 0.95) !important;
+      backdrop-filter: blur(8px);
+      color: #f3f4f6 !important;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 8px !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4) !important;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .leaflet-popup-tip { background: rgba(31, 41, 55, 0.95) !important; }
+
+    .popup-title {
+      font-weight: 700;
+      font-size: 1.1rem;
+      margin-bottom: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 0.5rem;
+    }
+
+    .popup-item {
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0.5rem;
+    }
+
+    .popup-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .popup-value { font-size: 0.9rem; font-weight: 500; }
+
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .badge-industrial {
+      background-color: rgba(239, 68, 68, 0.2);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    
+    .badge-normal {
+      background: rgba(59, 130, 246, 0.2); 
+      color: #93c5fd; 
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <!-- SVG Map Icon -->
+        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 0.5rem"><polygon points="3 6 9 3 15 6 21 3 21 18 15 21 9 18 3 21"></polygon><line x1="9" y1="3" x2="9" y2="18"></line><line x1="15" y1="6" x2="15" y2="21"></line></svg>
+        <h1 class="sidebar-title">Minvu Explorer</h1>
+        <p class="sidebar-subtitle">Visualización de Zonificación PRC (Planes Reguladores)</p>
+      </div>
+
+      <div class="filter-card">
+        <h2 class="filter-title">Filtros Activos</h2>
+        <p style="font-size: 0.85rem; color: var(--text-secondary)">Haz clic en polígonos del mapa para identificar la zona permitida.</p>
+        
+        <label class="filter-option" style="margin-top: 0.5rem">
+          <input type="checkbox" id="industrialToggle" />
+          <div style="display: flex; align-items: center; gap: 0.5rem">
+            <!-- SVG Factory Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--industrial-color)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"></path><path d="M17 18h1"></path><path d="M12 18h1"></path><path d="M7 18h1"></path></svg>
+            <span style="font-weight: 500; color: var(--text-primary)">
+              Zonas Industriales / Molestas
+            </span>
+          </div>
+        </label>
+      </div>
+
+      <div class="filter-card">
+        <h2 class="filter-title" style="color: #fbbf24">Contexto SIG</h2>
+        <p style="font-size: 0.8rem; color: var(--text-secondary)">
+          Servicio conectado:<br/><strong>PRC Zonificación, MapServer en Vivo (IDE MINVU)</strong>
+        </p>
+        <a class="btn" href="https://ide.minvu.cl/arcgis/rest/services/MINVU/PRC_Zonificacion/MapServer" target="_blank" style="margin-top: 0.5rem">Ver Metadatos IDE Minvu</a>
+      </div>
+    </aside>
+
+    <!-- Map Container -->
+    <main class="map-container">
+      <div id="map"></div>
+    </main>
+  </div>
+
+  <!-- Leaflet and Esri Leaflet Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Load Esri Leaflet from CDN -->
+  <script src="https://unpkg.com/esri-leaflet@3.0.10/dist/esri-leaflet.js" integrity="sha512-B6Xv5mRSko7M0x2BfV794Zey5A/Dk5D1Q5ZItZ7bH2lQv6xQj8L+H0YV0Jg40rA9A+O5c1W0Z+Zz80Z+gH2Hw==" crossorigin=""></script>
+
+  <script>
+    // Initialize Leaflet Map
+    const map = L.map('map', { zoomControl: false }).setView([-33.4489, -70.6693], 12);
+    L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // Dark Basemap from Carto
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> contributors &copy; <a href="https://carto.com/">CARTO</a>',
+      maxZoom: 19
+    }).addTo(map);
+
+    // MINVU Dynamic Map Layer
+    const minvuURL = "https://ide.minvu.cl/arcgis/rest/services/MINVU/PRC_Zonificacion/MapServer";
+    
+    const dynamicLayer = L.esri.dynamicMapLayer({
+      url: minvuURL,
+      opacity: 0.7
+    }).addTo(map);
+
+    // Popup Logic for Land Use Information
+    dynamicLayer.bindPopup(function (error, featureCollection) {
+      if (error || featureCollection.features.length === 0) {
+        return false;
+      } else {
+        const feature = featureCollection.features[0];
+        const props = feature.properties;
+        
+        let isIndustrial = false;
+        let htmlInfo = '';
+        
+        for (const [key, value] of Object.entries(props)) {
+          if (value && value !== 'Null' && key !== 'OBJECTID' && key !== 'SHAPE' && key !== 'SHAPE.STArea()' && key !== 'SHAPE.STLength()') {
+            const valStr = String(value).toUpperCase();
+            if (valStr.includes('INDUSTR') || valStr.includes('MOLEST') || valStr.includes('BODEGA')) {
+               isIndustrial = true;
+            }
+            htmlInfo += `
+              <div class="popup-item">
+                <span class="popup-label">${key}</span>
+                <span class="popup-value">${value}</span>
+              </div>
+            `;
+          }
+        }
+
+        const badgeHtml = isIndustrial 
+          ? `<span class="badge badge-industrial">Zona Industrial / Molesta</span>` 
+          : `<span class="badge badge-normal">Zona Urbana Especial / Comercial</span>`;
+
+        return `
+          <div class="popup-content" style="max-height: 250px; overflow-y: auto; padding: 5px;">
+            <div class="popup-title">Planes Reguladores Comunales - Zonificación</div>
+            <div style="margin-bottom: 0.75rem;">${badgeHtml}</div>
+            ${htmlInfo}
+          </div>
+        `;
+      }
+    });
+
+    // Handle Filter Change
+    const industrialToggle = document.getElementById('industrialToggle');
+    industrialToggle.addEventListener('change', (e) => {
+      const showIndustrialOnly = e.target.checked;
+      if (showIndustrialOnly) {
+        dynamicLayer.setLayerDefs({
+          "0": "USO LIKE '%INDUSTR%' OR ZONA LIKE '%INDUSTR%' OR USO_SUELO LIKE '%INDUSTR%' OR ZONA_PRC LIKE '%INDUSTR%' OR USO LIKE '%MOLEST%' OR ZONA LIKE '%MOLEST%'"
+        });
+      } else {
+        dynamicLayer.setLayerDefs({}); // Clear definitions
+      }
+    });
+  </script>
+</body>
+</html>
