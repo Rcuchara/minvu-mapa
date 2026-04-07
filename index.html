@@ -17,6 +17,9 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
   
+  <!-- Esri Leaflet Geocoder CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/esri-leaflet-geocoder@3.1.4/dist/esri-leaflet-geocoder.css" crossorigin="" />
+  
   <!-- Custom Styles (Premium Glassmorphism Look) -->
   <style>
     :root {
@@ -136,6 +139,31 @@
       background: #1e293b;
     }
 
+    /* Ad Widget & Monetization Styling */
+    .ad-widget {
+      margin-top: auto;
+      background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(239, 68, 68, 0.1) 100%);
+      border: 1px dashed rgba(239, 68, 68, 0.5);
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      display: none; /* Hidden by default */
+    }
+    
+    .ad-widget.visible {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .ad-sponsored-label { font-size: 0.7rem; color: #9ca3af; text-transform: uppercase; letter-spacing: 1px; }
+    .ad-content { font-size: 0.85rem; font-weight: 500; color: #f3f4f6; }
+    .monetization-buttons { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.1); }
+    .btn-lead { background: #22c55e; color: white; border: none; padding: 0.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
+    .btn-lead:hover { background: #16a34a; }
+    .btn-pdf { background: transparent; border: 1px solid #3b82f6; color: #60a5fa; padding: 0.5rem; border-radius: 6px; font-weight: 600; cursor: pointer; transition: 0.2s; font-size: 0.8rem; }
+    .btn-pdf:hover { background: rgba(59, 130, 246, 0.1); }
+
     /* Popup Styling */
     .leaflet-popup-content-wrapper {
       background: rgba(31, 41, 55, 0.95) !important;
@@ -228,6 +256,16 @@
         </p>
         <a class="btn" href="https://ide.minvu.cl/arcgis/rest/services/MINVU/PRC_Zonificacion/MapServer" target="_blank" style="margin-top: 0.5rem">Ver Metadatos IDE Minvu</a>
       </div>
+
+      <!-- Espacio Publicitario Premium -->
+      <div id="adSpace" class="ad-widget">
+        <span class="ad-sponsored-label">Espacio Patrocinado</span>
+        <div class="ad-content">
+          <strong>¿Buscas Terrenos Industriales?</strong><br/>
+          Bodegas en arriendo con entrega inmediata.<br/>
+          <a href="#" style="color: #60a5fa; text-decoration: none;">Ver Catálogo Volcán S.A. &rarr;</a>
+        </div>
+      </div>
     </aside>
 
     <!-- Map Container -->
@@ -240,11 +278,20 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <!-- Load Esri Leaflet from CDN -->
   <script src="https://unpkg.com/esri-leaflet@3.0.10/dist/esri-leaflet.js"></script>
+  <!-- Load Esri Leaflet Geocoder from CDN -->
+  <script src="https://unpkg.com/esri-leaflet-geocoder@3.1.4/dist/esri-leaflet-geocoder.js" crossorigin=""></script>
 
   <script>
     // Initialize Leaflet Map
     const map = L.map('map', { zoomControl: false }).setView([-33.4489, -70.6693], 12);
     L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+    // Integración del Buscador de Direcciones (Esri Geocoder)
+    const searchControl = L.esri.Geocoding.geosearch({
+      position: 'topright',
+      placeholder: 'Buscar dirección o comuna...',
+      useMapBounds: false
+    }).addTo(map);
 
     // Dark Basemap from Carto
     L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
@@ -286,29 +333,43 @@
           }
         }
 
-        const badgeHtml = isIndustrial 
+         const badgeHtml = isIndustrial 
           ? `<span class="badge badge-industrial">Zona Industrial / Molesta</span>` 
           : `<span class="badge badge-normal">Zona Urbana Especial / Comercial</span>`;
 
+        const monetizationHtml = `
+          <div class="monetization-buttons">
+            <button class="btn-lead" onclick="alert('Funcionalidad Pro: Redirigiendo a formulario de Lead para corretaje...')">📩 Contactar Asesor de Zona</button>
+            <button class="btn-pdf" onclick="alert('Funcionalidad Pro: Procesando pago de $3 USD para descargar Certificado PDF...')">📄 Descargar Detalles ($3 USD)</button>
+          </div>
+        `;
+
         return `
-          <div class="popup-content" style="max-height: 250px; overflow-y: auto; padding: 5px;">
+          <div class="popup-content" style="max-height: 400px; overflow-y: auto; padding: 5px; min-width: 200px;">
             <div class="popup-title">Planes Reguladores Comunales - Zonificación</div>
             <div style="margin-bottom: 0.75rem;">${badgeHtml}</div>
-            ${htmlInfo}
+            <div style="max-height: 150px; overflow-y: auto;">
+              ${htmlInfo}
+            </div>
+            ${monetizationHtml}
           </div>
         `;
       }
     });
 
-    // Handle Filter Change
+    // Handle Filter Change and Ad Logic
     const industrialToggle = document.getElementById('industrialToggle');
+    const adSpace = document.getElementById('adSpace');
+
     industrialToggle.addEventListener('change', (e) => {
       const showIndustrialOnly = e.target.checked;
       if (showIndustrialOnly) {
+        adSpace.classList.add('visible'); // Mostrar Publicidad Segmentada
         dynamicLayer.setLayerDefs({
           "0": "USO LIKE '%INDUSTR%' OR ZONA LIKE '%INDUSTR%' OR USO_SUELO LIKE '%INDUSTR%' OR ZONA_PRC LIKE '%INDUSTR%' OR USO LIKE '%MOLEST%' OR ZONA LIKE '%MOLEST%'"
         });
       } else {
+        adSpace.classList.remove('visible'); // Ocultar Publicidad
         dynamicLayer.setLayerDefs({}); // Clear definitions
       }
     });
