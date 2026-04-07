@@ -255,14 +255,20 @@
         <a class="btn" href="https://ide.minvu.cl/arcgis/rest/services/MINVU/PRC_Zonificacion/MapServer" target="_blank" style="margin-top: 0.5rem">Ver Metadatos IDE Minvu</a>
       </div>
 
-      <!-- Espacio Publicitario Premium -->
+      <!-- Espacio Publicitario General (Monetización por visitas) -->
       <div id="adSpace" class="ad-widget">
-        <span class="ad-sponsored-label">Espacio Patrocinado</span>
-        <div class="ad-content">
-          <strong>¿Buscas Terrenos Industriales?</strong><br/>
-          Bodegas en arriendo con entrega inmediata.<br/>
-          <a href="#" style="color: #60a5fa; text-decoration: none;">Ver Catálogo Volcán S.A. &rarr;</a>
+        <span class="ad-sponsored-label">Publicidad AdSense</span>
+        <div class="ad-content" style="margin-top: 0.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 4px;">
+          <span style="color: #6b7280; font-size: 0.75rem;">[ Banner 300x250 ]</span><br/>
+          <strong>Anuncio Comercial</strong><br/>
+          <span style="font-size: 0.7rem; font-weight: 300;">Espacio reservado para anunciantes de la red de display.</span>
         </div>
+      </div>
+
+      <!-- Descargo Legal -->
+      <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid rgba(255,255,255,0.05); font-size: 0.7rem; color: var(--text-secondary); text-align: center;">
+        <p><strong>Uso Recreativo / Entretenimiento</strong></p>
+        <p style="margin-top: 0.25rem;">Esta plataforma es de carácter exclusivamente informativo y de entretenimiento. No constituye información oficial, vinculante, ni debe usarse para tomas de decisiones legales, compras o fines comerciales. Para certificados formales acuda a la D.O.M. respectiva.</p>
       </div>
     </aside>
 
@@ -335,12 +341,6 @@
           ? `<span class="badge badge-industrial">Zona Industrial / Molesta</span>` 
           : `<span class="badge badge-normal">Zona Urbana Especial / Comercial</span>`;
 
-        const monetizationHtml = `
-          <div class="monetization-buttons">
-            <button class="btn-pdf" onclick="alert('Funcionalidad Pro: Procesando pago de $3 USD para descargar Certificado PDF...')">📄 Descargar Detalles ($3 USD)</button>
-          </div>
-        `;
-
         return `
           <div class="popup-content" style="max-height: 400px; overflow-y: auto; padding: 5px; min-width: 200px;">
             <div class="popup-title">Planes Reguladores Comunales - Zonificación</div>
@@ -348,7 +348,6 @@
             <div style="max-height: 150px; overflow-y: auto;">
               ${htmlInfo}
             </div>
-            ${monetizationHtml}
           </div>
         `;
       }
